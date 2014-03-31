@@ -57,16 +57,30 @@ namespace UdpUtils
             udpClient.SendAsync(datagram, datagram.Length, endPoint);
         }
 
+        /// <summary>
+        /// 接收消息
+        /// </summary>
         static void RecieveClient()
         {
-            while (true)
+            try
             {
-                IPEndPoint endPoint = new IPEndPoint(IPAddress.Any, 0);
-                byte[] datagram = udpClient.Receive(ref endPoint);
+                while (true)
+                {
+                    IPEndPoint endPoint = new IPEndPoint(IPAddress.Any, 0);
+                    byte[] datagram = udpClient.Receive(ref endPoint);
 
-                string message = Encoding.Unicode.GetString(datagram);
-                Message receiveMessage = JsonConvert.DeserializeObject<Message>(message);
-                ProcessMessage(receiveMessage);
+                    string message = Encoding.Unicode.GetString(datagram);
+                    Message receiveMessage = JsonConvert.DeserializeObject<Message>(message);
+                    ProcessMessage(receiveMessage);
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Write(e.Message);
+            }
+            finally
+            {
+                udpClient.Close();
             }
         }
 
