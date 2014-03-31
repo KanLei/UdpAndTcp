@@ -24,7 +24,7 @@ namespace UdpUtils
         public static Action<Message> SignOutNotify;
 
         /// <summary>
-        /// 向服务器异步发送信息，并返回 EndPoint 信息
+        /// 向服务器异步发送信息
         /// </summary>
         public static async Task SendToServerAsync(string ip, int port, Message msg)
         {
@@ -45,7 +45,7 @@ namespace UdpUtils
         }
 
         /// <summary>
-        /// 异步发送聊天信息
+        /// 向客户端异步发送信息
         /// </summary>
         /// <param name="ip">IP</param>
         /// <param name="port">端口</param>
@@ -60,7 +60,7 @@ namespace UdpUtils
         /// <summary>
         /// 接收消息
         /// </summary>
-        static void RecieveClient()
+        private static void RecieveClient()
         {
             try
             {
@@ -88,7 +88,7 @@ namespace UdpUtils
         /// use different logic to deal with different message
         /// </summary>
         /// <param name="type">message type</param>
-        static void ProcessMessage(Message msg)
+        private static void ProcessMessage(Message msg)
         {
             ProcessMessage processMessage = new ProcessMessage(msg, udpClient);
 

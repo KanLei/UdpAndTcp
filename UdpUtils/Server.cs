@@ -46,7 +46,7 @@ namespace UdpUtils
         /// <summary>
         /// 接收客户端的请求
         /// </summary>
-        static void RecieveClient()
+        private static void RecieveClient()
         {
             try
             {
@@ -76,7 +76,7 @@ namespace UdpUtils
         /// use different logic to deal with different message
         /// </summary>
         /// <param name="type">message type</param>
-        static void ProcessMessage(Message msg, IPEndPoint remoteEndPoint)
+        private static void ProcessMessage(Message msg, IPEndPoint remoteEndPoint)
         {
             ProcessMessage processMessage = new ProcessMessage(msg, udpClient);
 
