@@ -15,7 +15,6 @@ namespace UdpUtils
     /// </summary>
     public class Server
     {
-
         private static UdpClient udpClient;
 
         public static Action StartServerNotify;
@@ -44,18 +43,32 @@ namespace UdpUtils
             Task.Factory.StartNew(RecieveClient);  // 开始接收消息,
         }
 
+        /// <summary>
+        /// 接收客户端的请求
+        /// </summary>
         static void RecieveClient()
         {
-            while (true)
+            try
             {
-                IPEndPoint endPoint = new IPEndPoint(IPAddress.Any, 0);
-                byte[] datagram = udpClient.Receive(ref endPoint);
+                while (true)
+                {
+                    IPEndPoint endPoint = new IPEndPoint(IPAddress.Any, 0);
+                    byte[] datagram = udpClient.Receive(ref endPoint);
 
-                string message = Encoding.Unicode.GetString(datagram);
-                Message receiveMessage = JsonConvert.DeserializeObject<Message>(message);
-                receiveMessage.IpAddress = endPoint.Address.ToString();
-                receiveMessage.Port = endPoint.Port;
-                ProcessMessage(receiveMessage, endPoint);
+                    string message = Encoding.Unicode.GetString(datagram);
+                    Message receiveMessage = JsonConvert.DeserializeObject<Message>(message);
+                    receiveMessage.IpAddress = endPoint.Address.ToString();
+                    receiveMessage.Port = endPoint.Port;
+                    ProcessMessage(receiveMessage, endPoint);
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Write(e.Message);
+            }
+            finally
+            {
+                udpClient.Close();
             }
         }
 
