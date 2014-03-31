@@ -14,13 +14,13 @@ namespace UdpUtils
     /// </summary>
     internal class ProcessMessage
     {
-        public Message msg { get; set; }
-        private static List<Message> messages = new List<Message>();
+        private static List<Message> clients = new List<Message>();  // 用于保存在线客户端的集合
         private static readonly Object obj1 = new Object();
         private static readonly Object obj2 = new Object();
         private UdpClient udpClient;
         byte[] datagram;
         string text;
+        public Message msg { get; set; }
 
         public ProcessMessage() { }
 
@@ -47,20 +47,20 @@ namespace UdpUtils
             lock (obj1)  // prevent more than one client run coincide
             {
                 // send current user to other online users
-                messages.AsParallel().ForAll(x =>
+                clients.AsParallel().ForAll(x =>
                 {
                     IPEndPoint endPoint = new IPEndPoint(IPAddress.Parse(x.IpAddress), x.Port);
                     udpClient.BeginSend(datagram, datagram.Length, endPoint, null, null);
                 });
 
                 // send other online users to current user
-                messages.AsParallel().ForAll(x =>
+                clients.AsParallel().ForAll(x =>
                 {
                     byte[] dgram = Encoding.Unicode.GetBytes(JsonConvert.SerializeObject(x));
                     udpClient.Send(dgram, dgram.Length, remoteEndPoint);
                 });
 
-                messages.Add(this.msg);
+                clients.Add(this.msg);
             }
         }
 
@@ -79,10 +79,10 @@ namespace UdpUtils
             lock (obj2)  // prevent more than one client run coincide
             {
                 // remove current user
-                messages.Remove(messages.Find(x => x.IpAddress == msg.IpAddress && x.Port == msg.Port));
+                clients.Remove(clients.Find(x => x.IpAddress == msg.IpAddress && x.Port == msg.Port));
 
                 // notify other online users
-                messages.AsParallel().ForAll(x =>
+                clients.AsParallel().ForAll(x =>
                 {
                     IPEndPoint endPoint = new IPEndPoint(IPAddress.Parse(x.IpAddress), x.Port);
                     udpClient.BeginSend(datagram, datagram.Length, endPoint, null, null);
