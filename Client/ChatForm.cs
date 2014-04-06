@@ -4,6 +4,7 @@ using System.Text;
 using System.Windows.Forms;
 using System.Media;
 using System.IO;
+using System.Text.RegularExpressions;
 
 namespace Client
 {
@@ -12,9 +13,13 @@ namespace Client
         private UdpUtils.Message OtherInfo;
         private UdpUtils.Message PersonalInfo;
         StringBuilder chatContent = new StringBuilder();
+
         public ChatForm(UdpUtils.Message otherInfo, UdpUtils.Message personalInfo)
         {
             InitializeComponent();
+
+            // 注册收到文件提示事件
+            UdpUtils.Client.ReceiveFileProgressNotify += ReceiveFile;
 
             OtherInfo = otherInfo;
             PersonalInfo = personalInfo;
@@ -33,12 +38,6 @@ namespace Client
             lblPeerPort.Text = OtherInfo.Port.ToString();
             #endregion
 
-
-            # region display my information
-            lblMyName.Text = PersonalInfo.FromUserName;
-            lblMyIP.Text = PersonalInfo.IpAddress;
-            lblMyPort.Text = PersonalInfo.Port.ToString();
-            #endregion
 
             this.Text = string.Format("{0}:{1}", PersonalInfo.FromUserName, OtherInfo.FromUserName);
         }
@@ -60,16 +59,16 @@ namespace Client
         /// Send message to others
         /// </summary>
         /// <param name="msg"></param>
-        public async void sendMessage(string msg)
+        public void sendMessage(string msg)
         {
-            string sendMsg = string.Format("{0}:{1}\r\n", lblMyName.Text, msg);
+            string sendMsg = string.Format("{0}:{1}\r\n", PersonalInfo.FromUserName, msg);
             richTextBoxChat.AppendText(sendMsg);
             richTextBoxChat.ScrollToCaret();
             chatContent.Append(sendMsg);
 
             UdpUtils.Message message = new UdpUtils.Message
             {
-                FromUserName = lblMyName.Text,
+                FromUserName = PersonalInfo.FromUserName,
                 ToUserName = lblPeerName.Text,
                 Type = UdpUtils.MessageEnum.CHAT,
                 Content = msg,
@@ -95,6 +94,47 @@ namespace Client
                 this.Activate();
             }));
             chatContent.Append(data);
+        }
+
+        /// <summary>
+        /// 接收客户端发来的文件
+        /// </summary>
+        public void ReceiveFile(string percent)
+        {
+            this.Invoke(new MethodInvoker(() =>
+            {
+                lblReceive.Text = String.Format("正在接收文件...{0}", percent);
+            }));
+        }
+
+
+        private void txtMessage_DragDrop(object sender, DragEventArgs e)
+        {
+            // 获取文件的路径
+            string[] files = (string[])e.Data.GetData(DataFormats.FileDrop, false);
+            StringBuilder sb = new StringBuilder();
+            foreach (string filePath in files)
+            {
+                sb.Append(filePath);
+            }
+
+            UdpUtils.Message message = new UdpUtils.Message
+            {
+                FromUserName = PersonalInfo.FromUserName,
+                ToUserName = lblPeerName.Text,
+                Type = UdpUtils.MessageEnum.FILE,
+                SendTime = DateTime.Now
+            };
+
+            UdpUtils.Client.SendFileToClient(lblPeerIP.Text, Convert.ToInt32(lblPeerPort.Text), sb.ToString(), message);
+        }
+
+        private void txtMessage_DragEnter(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+                e.Effect = DragDropEffects.All;
+            else
+                e.Effect = DragDropEffects.None;
         }
 
         /// <summary>
@@ -145,5 +185,8 @@ namespace Client
                 }
             }
         }
+
+
+
     }
 }

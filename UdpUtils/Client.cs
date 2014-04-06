@@ -4,6 +4,8 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
+using System.IO;
+using System.Text.RegularExpressions;
 
 namespace UdpUtils
 {
@@ -22,6 +24,8 @@ namespace UdpUtils
         public static Action<Message> ReceiveMessageNotify;
         public static Action<Message> SignInNotify;
         public static Action<Message> SignOutNotify;
+        public static Action<string> ReceiveFileProgressNotify;  // 接收文件进度提示
+
 
         /// <summary>
         /// 向服务器异步发送信息
@@ -30,7 +34,7 @@ namespace UdpUtils
         {
             byte[] datagram = Encoding.Unicode.GetBytes(JsonConvert.SerializeObject(msg));
             IPEndPoint endPoint = new IPEndPoint(IPAddress.Parse(ip), port);
-            udpClient.SendAsync(datagram, datagram.Length, endPoint);
+            await udpClient.SendAsync(datagram, datagram.Length, endPoint);
 
             if (StartClientNotify != null)
             {
@@ -54,8 +58,9 @@ namespace UdpUtils
         {
             byte[] datagram = Encoding.Unicode.GetBytes(JsonConvert.SerializeObject(msg));
             IPEndPoint endPoint = new IPEndPoint(IPAddress.Parse(ip), port);
-            udpClient.SendAsync(datagram, datagram.Length, endPoint);
+            await udpClient.SendAsync(datagram, datagram.Length, endPoint);
         }
+
 
         /// <summary>
         /// 接收消息
@@ -71,7 +76,9 @@ namespace UdpUtils
 
                     string message = Encoding.Unicode.GetString(datagram);
                     Message receiveMessage = JsonConvert.DeserializeObject<Message>(message);
-                    ProcessMessage(receiveMessage);
+
+                    ProcessMessage(receiveMessage, endPoint);
+
                 }
             }
             catch (Exception e)
@@ -84,11 +91,39 @@ namespace UdpUtils
             }
         }
 
+
+        /// <summary>
+        /// 发送文件到远程客户端
+        /// </summary>
+        /// <param name="ip">IP</param>
+        /// <param name="port">Port</param>
+        /// <param name="filePath">文件路径</param>
+        /// <param name="msg">信息内容</param>
+        public static void SendFileToClient(string ip, int port, string filePath, Message msg)
+        {
+            ProcessFile process = new ProcessFile();
+            process.SendToClientFileAsync(ip, port, filePath, msg);
+        }
+
+
+        /// <summary>
+        /// 从远程客户端接收文件
+        /// </summary>
+        /// <param name="msg"></param>
+        /// <param name="remtoe"></param>
+        private static void ReceiveClientFile(Message msg, IPEndPoint remtoe)
+        {
+            ProcessFile process = new ProcessFile();
+            process.ReceiveClientFile(msg, remtoe);
+        }
+
+
+
         /// <summary>
         /// use different logic to deal with different message
         /// </summary>
         /// <param name="type">message type</param>
-        private static void ProcessMessage(Message msg)
+        private static void ProcessMessage(Message msg, IPEndPoint remote)
         {
             ProcessMessage processMessage = new ProcessMessage(msg, udpClient);
 
@@ -111,6 +146,9 @@ namespace UdpUtils
                     {
                         ReceiveMessageNotify(msg);  // 通知客户端收到聊天信息
                     }
+                    break;
+                case MessageEnum.FILE:
+                    ReceiveClientFile(msg, remote);
                     break;
                 default:
                     Log.Write(String.Format("MessageEnum doesn't have {0}", msg.Type));

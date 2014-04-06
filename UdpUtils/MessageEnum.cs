@@ -11,6 +11,6 @@ namespace UdpUtils
     /// </summary>
     public enum MessageEnum
     {
-        SIGN_IN, SIGN_OUT, CHAT
+        SIGN_IN, SIGN_OUT, CHAT, FILE
     }
 }

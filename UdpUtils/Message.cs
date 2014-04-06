@@ -37,12 +37,50 @@ namespace UdpUtils
             this.SendTime = DateTime.Now;
         }
 
+
+        /// <summary>
+        /// 发送方
+        /// </summary>
         public string FromUserName { get; set; }
+
+        /// <summary>
+        /// 接收方
+        /// </summary>
         public string ToUserName { get; set; }
+
+        /// <summary>
+        /// IP 地址
+        /// </summary>
         public string IpAddress { get; set; }
+
+        /// <summary>
+        /// 端口号
+        /// </summary>
         public int Port { get; set; }
+
+        /// <summary>
+        /// 信息内容
+        /// </summary>
         public string Content { get; set; }
+
+        /// <summary>
+        /// 信息类型
+        /// </summary>
         public MessageEnum Type { get; set; }
+
+        /// <summary>
+        /// 发送时间
+        /// </summary>
         public DateTime SendTime { get; set; }
+
+        /// <summary>
+        /// 文件名
+        /// </summary>
+        public string FileName { get; set; }
+
+        /// <summary>
+        /// 文件大小
+        /// </summary>
+        public decimal FileLength { get; set; }
     }
 }

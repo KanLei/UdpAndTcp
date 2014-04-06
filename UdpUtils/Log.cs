@@ -29,13 +29,16 @@ namespace UdpUtils
             errorInfo.AppendFormat("File Path: {0}", path);
             errorInfo.Append(Environment.NewLine);
             errorInfo.AppendFormat("Line Number: {0}", lineNumber);
+
+            WriteToFile(errorInfo.ToString());
         }
 
-        private void WriteToFile(string errorInfo)
+        private static void WriteToFile(string errorInfo)
         {
-            using (StreamWriter write = File.CreateText("Log.txt"))
+            using (FileStream fs = new FileStream("Log.txt", FileMode.OpenOrCreate, FileAccess.Write))
             {
-                write.WriteLine(errorInfo);
+                StreamWriter write = new StreamWriter(fs);
+                write.WriteLine(errorInfo + Environment.NewLine);
             }
         }
     }
