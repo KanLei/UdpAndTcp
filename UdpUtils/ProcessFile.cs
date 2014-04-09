@@ -22,7 +22,7 @@ namespace UdpUtils
         /// <param name="ip"></param>
         /// <param name="port"></param>
         /// <param name="filePath"></param>
-        public void SendToClientFileAsync(string ip, int port, string filePath, Message msg)
+        public async void SendToClientFileAsync(string ip, int port, string filePath, Message msg)
         {
             // 新建 Udp 用于发送文件
             UdpClient sendClient = new UdpClient();
@@ -55,20 +55,27 @@ namespace UdpUtils
                 byte[] buffer = new byte[MAXSIZE];
                 using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
                 {
+                    int percent = 0;
                     int count = 0;
                     do
                     {
-                        count = fs.Read(buffer, 0, buffer.Length);
-                        sendClient.Send(buffer, count, remoteEndPoint);
-                        //Task.Delay(10);
+                        count = fs.Read(buffer, 0, buffer.Length);  // 0 表示读入到 buffer 中的起始位置
+
+                        if (Client.SendFileProgressNotify != null)
+                        {
+                            Client.SendFileProgressNotify(String.Format("{0:F2}%", (percent += count) / msg.FileLength * 100));
+                        }
+                        await Task.Delay(10);
+                        sendClient.SendAsync(buffer, count, remoteEndPoint);
+
                     } while (count > 0);
 
                     sendClient.Close();
                 }
             }
-            catch (Exception ex)
+            catch (Exception e)
             {
-                Log.Write(ex.Message);
+                Log.Write(e.Message);
             }
         }
 
@@ -77,38 +84,47 @@ namespace UdpUtils
         /// <summary>
         /// 接收客户端发送的文件
         /// </summary>
-        public void ReceiveClientFile(Message msg, IPEndPoint remtoe)
+        public async void ReceiveClientFile(Message msg, IPEndPoint remtoe)
         {
             // 新建 Udp 协议用于接收文件
             UdpClient receiveFile = new UdpClient();
 
-            /*
-             *  响应远程客户端发送文件的请求
-             *  通知远程客户端将文件发送至此端口
-             */
-            Message send = new Message { Type = MessageEnum.FILE };
-            byte[] buffer = Encoding.Unicode.GetBytes(JsonConvert.SerializeObject(send));
-            receiveFile.Send(buffer, buffer.Length, remtoe);  // 响应远程客户端
-
-            // 接收并保存到文件
-            using (FileStream fs = new FileStream(msg.FileName, FileMode.OpenOrCreate, FileAccess.Write))
+            try
             {
-                int percent = 0;
-                byte[] datagram = new byte[MAXSIZE];
-                IPEndPoint endPoint = new IPEndPoint(IPAddress.Any, 0);
-                do
+
+                /*
+                 *  响应远程客户端发送文件的请求
+                 *  通知远程客户端将文件发送至此端口
+                 */
+                Message send = new Message { Type = MessageEnum.FILE };
+                byte[] buffer = Encoding.Unicode.GetBytes(JsonConvert.SerializeObject(send));
+                receiveFile.Send(buffer, buffer.Length, remtoe);  // 响应远程客户端
+
+                // 接收并保存到文件
+                using (FileStream fs = new FileStream(msg.FileName, FileMode.OpenOrCreate, FileAccess.Write))
                 {
-                    datagram = receiveFile.Receive(ref endPoint);
-                    fs.Write(datagram, 0, datagram.Length);
-
-                    if (Client.ReceiveFileProgressNotify != null)
+                    int percent = 0;
+                    int count = 0;
+                    byte[] datagram = new byte[MAXSIZE];
+                    IPEndPoint endPoint = new IPEndPoint(IPAddress.Any, 0);
+                    do
                     {
-                        Client.ReceiveFileProgressNotify(String.Format("{0:F2}%", (percent += datagram.Length) / msg.FileLength * 100));
-                    }
+                        datagram = receiveFile.Receive(ref endPoint);
+                        await fs.WriteAsync(datagram, 0, datagram.Length);  // 0 表示从 datagram 起始处写入到 fs 流中
 
-                    //Task.Delay(10);
-                } while (datagram.Length > 0);
-                receiveFile.Close();
+                        if (Client.ReceiveFileProgressNotify != null)
+                        {
+                            Client.ReceiveFileProgressNotify(String.Format("{0:F2}%", (percent += datagram.Length) / msg.FileLength * 100));
+                        }
+
+                    } while (datagram.Length > 0);
+                    receiveFile.Close();
+                }
+
+            }
+            catch (Exception e)
+            {
+                Log.Write(e.Message);
             }
         }
     }

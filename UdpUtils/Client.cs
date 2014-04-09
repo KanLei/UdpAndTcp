@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using System.Text.RegularExpressions;
+using System.ComponentModel;
 
 namespace UdpUtils
 {
@@ -25,6 +26,7 @@ namespace UdpUtils
         public static Action<Message> SignInNotify;
         public static Action<Message> SignOutNotify;
         public static Action<string> ReceiveFileProgressNotify;  // 接收文件进度提示
+        public static Action<string> SendFileProgressNotify;     // 发送文件进度提示
 
 
         /// <summary>

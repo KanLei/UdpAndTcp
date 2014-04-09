@@ -41,6 +41,7 @@
             this.lblPeerName = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.lblReceive = new System.Windows.Forms.Label();
+            this.lblSend = new System.Windows.Forms.Label();
             this.groupBox1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -167,10 +168,18 @@
             // lblReceive
             // 
             this.lblReceive.AutoSize = true;
-            this.lblReceive.Location = new System.Drawing.Point(260, 145);
+            this.lblReceive.Location = new System.Drawing.Point(261, 145);
             this.lblReceive.Name = "lblReceive";
             this.lblReceive.Size = new System.Drawing.Size(0, 13);
             this.lblReceive.TabIndex = 5;
+            // 
+            // lblSend
+            // 
+            this.lblSend.AutoSize = true;
+            this.lblSend.Location = new System.Drawing.Point(261, 181);
+            this.lblSend.Name = "lblSend";
+            this.lblSend.Size = new System.Drawing.Size(0, 13);
+            this.lblSend.TabIndex = 6;
             // 
             // ChatForm
             // 
@@ -180,6 +189,7 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.Teal;
             this.ClientSize = new System.Drawing.Size(403, 310);
+            this.Controls.Add(this.lblSend);
             this.Controls.Add(this.lblReceive);
             this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.label1);
@@ -214,5 +224,6 @@
         private System.Windows.Forms.Label lblPeerName;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label lblReceive;
+        private System.Windows.Forms.Label lblSend;
     }
 }

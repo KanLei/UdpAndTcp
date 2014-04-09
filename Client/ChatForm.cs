@@ -5,6 +5,7 @@ using System.Windows.Forms;
 using System.Media;
 using System.IO;
 using System.Text.RegularExpressions;
+using System.Threading;
 
 namespace Client
 {
@@ -19,7 +20,8 @@ namespace Client
             InitializeComponent();
 
             // 注册收到文件提示事件
-            UdpUtils.Client.ReceiveFileProgressNotify += ReceiveFile;
+            UdpUtils.Client.ReceiveFileProgressNotify += ReceiveFileProgress;
+            UdpUtils.Client.SendFileProgressNotify += SendFileProgress;
 
             OtherInfo = otherInfo;
             PersonalInfo = personalInfo;
@@ -97,17 +99,36 @@ namespace Client
         }
 
         /// <summary>
-        /// 接收客户端发来的文件
+        /// 显示发送文件进度
         /// </summary>
-        public void ReceiveFile(string percent)
+        public void SendFileProgress(string percent)
         {
-            this.Invoke(new MethodInvoker(() =>
-            {
-                lblReceive.Text = String.Format("正在接收文件...{0}", percent);
-            }));
+            this.Invoke(new MethodInvoker(() => { lblSend.Text = String.Format("已发送文件...{0}", percent); }));
+        }
+
+        /// <summary>
+        /// 显示接收文件进度
+        /// </summary>
+        public void ReceiveFileProgress(string percent)
+        {
+            this.Invoke(new MethodInvoker(() => { lblReceive.Text = String.Format("已接收文件...{0}", percent); }));
         }
 
 
+        /// <summary>
+        /// 文件进入拖放区触发此事件
+        /// </summary>
+        private void txtMessage_DragEnter(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+                e.Effect = DragDropEffects.All;
+            else
+                e.Effect = DragDropEffects.None;
+        }
+
+        /// <summary>
+        /// 完成拖放文件时触发此事件
+        /// </summary>
         private void txtMessage_DragDrop(object sender, DragEventArgs e)
         {
             // 获取文件的路径
@@ -129,13 +150,6 @@ namespace Client
             UdpUtils.Client.SendFileToClient(lblPeerIP.Text, Convert.ToInt32(lblPeerPort.Text), sb.ToString(), message);
         }
 
-        private void txtMessage_DragEnter(object sender, DragEventArgs e)
-        {
-            if (e.Data.GetDataPresent(DataFormats.FileDrop))
-                e.Effect = DragDropEffects.All;
-            else
-                e.Effect = DragDropEffects.None;
-        }
 
         /// <summary>
         /// Clear the input box
