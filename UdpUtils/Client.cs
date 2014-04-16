@@ -101,22 +101,40 @@ namespace UdpUtils
         /// <param name="port">Port</param>
         /// <param name="filePath">文件路径</param>
         /// <param name="msg">信息内容</param>
-        public static void SendFileToClient(string ip, int port, string filePath, Message msg)
+        public static void SendFileToClient(string ip, int port, string filePath, Message msg, bool udp = true)
         {
-            ProcessFile process = new ProcessFile();
-            process.SendToClientFileAsync(ip, port, filePath, msg);
+            if (udp)
+            {
+                msg.Udp = true;  // Udp 传输文件
+                ProcessFileByUdp process = new ProcessFileByUdp();
+                process.SendToClientFileAsync(ip, port, filePath, msg);
+            }
+            else
+            {
+                msg.Udp = false;  // Tcp 传输文件
+                ProcessFileByTcp process = new ProcessFileByTcp();
+                process.SendToClientFileAsync(ip, port, filePath, msg);
+            }
         }
 
 
         /// <summary>
         /// 从远程客户端接收文件
         /// </summary>
-        /// <param name="msg"></param>
-        /// <param name="remtoe"></param>
+        /// <param name="msg">Message</param>
+        /// <param name="remtoe">IPEndPoint</param>
         private static void ReceiveClientFile(Message msg, IPEndPoint remtoe)
         {
-            ProcessFile process = new ProcessFile();
-            process.ReceiveClientFile(msg, remtoe);
+            if (msg.Udp)
+            {
+                ProcessFileByUdp process = new ProcessFileByUdp();
+                process.ReceiveClientFile(msg, remtoe);
+            }
+            else
+            {
+                ProcessFileByTcp process = new ProcessFileByTcp();
+                process.ReceiveClientFile(msg, remtoe);
+            }
         }
 
 

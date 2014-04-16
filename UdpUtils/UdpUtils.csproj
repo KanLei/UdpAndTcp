@@ -44,7 +44,8 @@
     <Compile Include="Log.cs" />
     <Compile Include="Message.cs" />
     <Compile Include="MessageEnum.cs" />
-    <Compile Include="ProcessFile.cs" />
+    <Compile Include="ProcessFileByTcp.cs" />
+    <Compile Include="ProcessFileByUdp.cs" />
     <Compile Include="ProcessMessage.cs" />
     <Compile Include="Server.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

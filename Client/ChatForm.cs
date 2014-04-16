@@ -29,6 +29,7 @@ namespace Client
             ShowUserInfo();
         }
 
+
         /// <summary>
         /// Display User Information
         /// </summary>
@@ -144,7 +145,7 @@ namespace Client
                 FromUserName = PersonalInfo.FromUserName,
                 ToUserName = lblPeerName.Text,
                 Type = UdpUtils.MessageEnum.FILE,
-                SendTime = DateTime.Now
+                SendTime = DateTime.Now,
             };
 
             UdpUtils.Client.SendFileToClient(lblPeerIP.Text, Convert.ToInt32(lblPeerPort.Text), sb.ToString(), message);
@@ -199,8 +200,6 @@ namespace Client
                 }
             }
         }
-
-
-
+     
     }
 }

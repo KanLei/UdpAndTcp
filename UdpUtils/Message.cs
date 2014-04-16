@@ -82,5 +82,10 @@ namespace UdpUtils
         /// 文件大小
         /// </summary>
         public decimal FileLength { get; set; }
+
+        /// <summary>
+        /// true 为Udp传送文件; false 为Tcp传送文件
+        /// </summary>
+        public bool Udp { get; set; }
     }
 }
