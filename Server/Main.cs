@@ -16,8 +16,7 @@ namespace Server
             UdpUtils.Server.SignInNotify += ReceiveMessage;
             UdpUtils.Server.SignOutNotify += ReceiveMessage;
 
-            /* 启动服务器 */
-            UdpUtils.Server.StartServer(txtIPAddress.Text, Convert.ToInt32(txtPort.Text));
+            
         }
 
         /// <summary>
@@ -46,6 +45,9 @@ namespace Server
             txtIPAddress.Enabled = false;
             txtPort.Enabled = false;
             ShowOnlineUsers();
+
+            /* 启动服务器 */
+            UdpUtils.Server.StartServer(txtIPAddress.Text, Convert.ToInt32(txtPort.Text));
 
             richTextBoxUserRecords.AppendText("Server is starting...\r\n");
         }
