@@ -41,7 +41,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Client.cs" />
-    <Compile Include="Log.cs" />
+    <Compile Include="Log\Log.cs" />
     <Compile Include="Message.cs" />
     <Compile Include="MessageEnum.cs" />
     <Compile Include="ProcessFileByTcp.cs" />
