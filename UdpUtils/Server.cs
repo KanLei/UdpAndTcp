@@ -40,7 +40,7 @@ namespace UdpUtils
              * 注意这里使用的是线程池线程，默认是后台线程，
              * 如果使用前台线程，则会阻塞服务器端正常关闭。
              */
-            Task.Factory.StartNew(RecieveClient);  // 开始接收消息,
+            Task.Run(() => RecieveClient());  // 开始接收消息
         }
 
         /// <summary>

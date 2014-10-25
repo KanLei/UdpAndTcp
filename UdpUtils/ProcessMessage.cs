@@ -15,8 +15,6 @@ namespace UdpUtils
     internal class ProcessMessage
     {
         private static List<Message> clients = new List<Message>();  // 用于保存在线客户端的集合
-        private static readonly Object obj1 = new Object();
-        private static readonly Object obj2 = new Object();
         private UdpClient udpClient;
         byte[] datagram;
         string text;
@@ -44,24 +42,22 @@ namespace UdpUtils
                 Server.SignInNotify(msg);
             }
 
-            lock (obj1)  // prevent more than one client run coincide
+
+            // send current user to other online users
+            clients.AsParallel().ForAll(x =>
             {
-                // send current user to other online users
-                clients.AsParallel().ForAll(x =>
-                {
-                    IPEndPoint endPoint = new IPEndPoint(IPAddress.Parse(x.IpAddress), x.Port);
-                    udpClient.BeginSend(datagram, datagram.Length, endPoint, null, null);
-                });
+                IPEndPoint endPoint = new IPEndPoint(IPAddress.Parse(x.IpAddress), x.Port);
+                udpClient.BeginSend(datagram, datagram.Length, endPoint, null, null);
+            });
 
-                // send other online users to current user
-                clients.AsParallel().ForAll(x =>
-                {
-                    byte[] dgram = Encoding.Unicode.GetBytes(JsonConvert.SerializeObject(x));
-                    udpClient.Send(dgram, dgram.Length, remoteEndPoint);
-                });
+            // send other online users to current user
+            clients.AsParallel().ForAll(x =>
+            {
+                byte[] dgram = Encoding.Unicode.GetBytes(JsonConvert.SerializeObject(x));
+                udpClient.Send(dgram, dgram.Length, remoteEndPoint);
+            });
 
-                clients.Add(this.msg);
-            }
+            clients.Add(this.msg);
         }
 
 
@@ -76,18 +72,15 @@ namespace UdpUtils
                 Server.SignOutNotify(msg);
             }
 
-            lock (obj2)  // prevent more than one client run coincide
-            {
-                // remove current user
-                clients.Remove(clients.Find(x => x.IpAddress == msg.IpAddress && x.Port == msg.Port));
+            // remove current user
+            clients.Remove(clients.Find(x => x.IpAddress == msg.IpAddress && x.Port == msg.Port));
 
-                // notify other online users
-                clients.AsParallel().ForAll(x =>
-                {
-                    IPEndPoint endPoint = new IPEndPoint(IPAddress.Parse(x.IpAddress), x.Port);
-                    udpClient.BeginSend(datagram, datagram.Length, endPoint, null, null);
-                });
-            }
+            // notify other online users
+            clients.AsParallel().ForAll(x =>
+            {
+                IPEndPoint endPoint = new IPEndPoint(IPAddress.Parse(x.IpAddress), x.Port);
+                udpClient.BeginSend(datagram, datagram.Length, endPoint, null, null);
+            });
         }
 
         internal void Chat()
