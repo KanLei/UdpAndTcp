@@ -93,12 +93,12 @@ namespace Client
         /// <summary>
         /// Connect to the server
         /// </summary>
-        private void btnConnection_Click(object sender, EventArgs e)
+        private async void btnConnection_Click(object sender, EventArgs e)
         {
             btnConnection.Enabled = txtIPAddress.Enabled = txtPort.Enabled = false;
 
             UdpUtils.Message message = new UdpUtils.Message() { FromUserName = this.Text, Type = UdpUtils.MessageEnum.SIGN_IN };
-            UdpUtils.Client.SendToServerAsync(txtIPAddress.Text, Convert.ToInt32(txtPort.Text), message);
+            await UdpUtils.Client.SendToServerAsync(txtIPAddress.Text, Convert.ToInt32(txtPort.Text), message);
 
             this.Invoke(new MethodInvoker(() => { listViewOnlineUsers.Items.Add(note + "\r\n"); }));
         }
@@ -146,10 +146,10 @@ namespace Client
         /// <summary>
         /// close form
         /// </summary>
-        private void Main_FormClosing(object sender, FormClosingEventArgs e)
+        private async void Main_FormClosing(object sender, FormClosingEventArgs e)
         {
             UdpUtils.Message message = new UdpUtils.Message() { FromUserName = this.Text, Type = UdpUtils.MessageEnum.SIGN_OUT };
-            UdpUtils.Client.SendToServerAsync(txtIPAddress.Text, Convert.ToInt32(txtPort.Text), message);
+            await UdpUtils.Client.SendToServerAsync(txtIPAddress.Text, Convert.ToInt32(txtPort.Text), message);
         }
 
         /// <summary>

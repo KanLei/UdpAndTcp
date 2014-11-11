@@ -36,7 +36,7 @@ namespace UdpUtils
         {
             byte[] datagram = Encoding.Unicode.GetBytes(JsonConvert.SerializeObject(msg));
             IPEndPoint endPoint = new IPEndPoint(IPAddress.Parse(ip), port);
-            await udpClient.SendAsync(datagram, datagram.Length, endPoint);
+            await udpClient.SendAsync(datagram, datagram.Length, endPoint).ConfigureAwait(false);
 
             if (StartClientNotify != null)
             {
@@ -46,7 +46,7 @@ namespace UdpUtils
             // 发送下线消息，则不再监听消息
             if (msg.Type != MessageEnum.SIGN_OUT)
             {
-                new Task(RecieveClient).Start();
+                await RecieveClient();
             }
         }
 
@@ -56,30 +56,31 @@ namespace UdpUtils
         /// <param name="ip">IP</param>
         /// <param name="port">端口</param>
         /// <param name="msg">Message</param>
-        public static async void SendToClientAsync(string ip, int port, Message msg)
+        public static async Task SendToClientAsync(string ip, int port, Message msg)
         {
             byte[] datagram = Encoding.Unicode.GetBytes(JsonConvert.SerializeObject(msg));
             IPEndPoint endPoint = new IPEndPoint(IPAddress.Parse(ip), port);
-            await udpClient.SendAsync(datagram, datagram.Length, endPoint);
+            await udpClient.SendAsync(datagram, datagram.Length, endPoint).ConfigureAwait(false);
         }
 
 
         /// <summary>
         /// 接收消息
         /// </summary>
-        private static void RecieveClient()
+        private static async Task RecieveClient()
         {
             try
             {
                 while (true)
                 {
-                    IPEndPoint endPoint = new IPEndPoint(IPAddress.Any, 0);
-                    byte[] datagram = udpClient.Receive(ref endPoint);
+                    //IPEndPoint endPoint = new IPEndPoint(IPAddress.Any, 0);
+                    //byte[] datagram =  udpClient.Receive(ref endPoint);
+                    UdpReceiveResult result = await udpClient.ReceiveAsync();
 
-                    string message = Encoding.Unicode.GetString(datagram);
+                    string message = Encoding.Unicode.GetString(result.Buffer);
                     Message receiveMessage = JsonConvert.DeserializeObject<Message>(message);
 
-                    ProcessMessage(receiveMessage, endPoint);
+                    await ProcessMessage(receiveMessage, result.RemoteEndPoint);
 
                 }
             }
@@ -101,19 +102,19 @@ namespace UdpUtils
         /// <param name="port">Port</param>
         /// <param name="filePath">文件路径</param>
         /// <param name="msg">信息内容</param>
-        public static void SendFileToClient(string ip, int port, string filePath, Message msg, bool udp = true)
+        public static async Task SendFileToClient(string ip, int port, string filePath, Message msg, bool udp = true)
         {
             if (udp)
             {
                 msg.Udp = true;  // Udp 传输文件
                 ProcessFileByUdp process = new ProcessFileByUdp();
-                process.SendToClientFileAsync(ip, port, filePath, msg);
+                await process.SendToClientFileAsync(ip, port, filePath, msg).ConfigureAwait(false);
             }
             else
             {
                 msg.Udp = false;  // Tcp 传输文件
                 ProcessFileByTcp process = new ProcessFileByTcp();
-                process.SendToClientFileAsync(ip, port, filePath, msg);
+                await process.SendToClientFileAsync(ip, port, filePath, msg).ConfigureAwait(false);
             }
         }
 
@@ -123,17 +124,17 @@ namespace UdpUtils
         /// </summary>
         /// <param name="msg">Message</param>
         /// <param name="remtoe">IPEndPoint</param>
-        private static void ReceiveClientFile(Message msg, IPEndPoint remtoe)
+        private static async Task ReceiveClientFile(Message msg, IPEndPoint remtoe)
         {
             if (msg.Udp)
             {
                 ProcessFileByUdp process = new ProcessFileByUdp();
-                process.ReceiveClientFile(msg, remtoe);
+                await process.ReceiveClientFile(msg, remtoe);
             }
             else
             {
                 ProcessFileByTcp process = new ProcessFileByTcp();
-                process.ReceiveClientFile(msg, remtoe);
+                await process.ReceiveClientFile(msg, remtoe);
             }
         }
 
@@ -143,7 +144,7 @@ namespace UdpUtils
         /// use different logic to deal with different message
         /// </summary>
         /// <param name="type">message type</param>
-        private static void ProcessMessage(Message msg, IPEndPoint remote)
+        private static async Task ProcessMessage(Message msg, IPEndPoint remote)
         {
             ProcessMessage processMessage = new ProcessMessage(msg, udpClient);
 
@@ -168,7 +169,7 @@ namespace UdpUtils
                     }
                     break;
                 case MessageEnum.FILE:
-                    ReceiveClientFile(msg, remote);
+                    await ReceiveClientFile(msg, remote);
                     break;
                 default:
                     Log.Write(String.Format("MessageEnum doesn't have {0}", msg.Type));

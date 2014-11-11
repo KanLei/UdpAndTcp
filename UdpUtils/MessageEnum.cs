@@ -11,6 +11,24 @@ namespace UdpUtils
     /// </summary>
     public enum MessageEnum
     {
-        SIGN_IN, SIGN_OUT, CHAT, FILE
+        /// <summary>
+        /// 登录
+        /// </summary>
+        SIGN_IN,
+
+        /// <summary>
+        /// 退出
+        /// </summary>
+        SIGN_OUT,
+
+        /// <summary>
+        /// 聊天
+        /// </summary>
+        CHAT,
+
+        /// <summary>
+        /// 文件
+        /// </summary>
+        FILE
     }
 }

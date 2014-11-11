@@ -62,7 +62,7 @@ namespace Client
         /// Send message to others
         /// </summary>
         /// <param name="msg"></param>
-        public void sendMessage(string msg)
+        public async void sendMessage(string msg)
         {
             string sendMsg = string.Format("{0}:{1}\r\n", PersonalInfo.FromUserName, msg);
             richTextBoxChat.AppendText(sendMsg);
@@ -78,7 +78,8 @@ namespace Client
                 SendTime = DateTime.Now
             };
 
-            UdpUtils.Client.SendToClientAsync(lblPeerIP.Text, Convert.ToInt32(lblPeerPort.Text), message);
+            await UdpUtils.Client.SendToClientAsync(lblPeerIP.Text, Convert.ToInt32(lblPeerPort.Text), message).
+                ConfigureAwait(false);
         }
 
 
@@ -130,7 +131,7 @@ namespace Client
         /// <summary>
         /// 完成拖放文件时触发此事件
         /// </summary>
-        private void txtMessage_DragDrop(object sender, DragEventArgs e)
+        private async void txtMessage_DragDrop(object sender, DragEventArgs e)
         {
             // 获取文件的路径
             string[] files = (string[])e.Data.GetData(DataFormats.FileDrop, false);
@@ -148,7 +149,8 @@ namespace Client
                 SendTime = DateTime.Now,
             };
 
-            UdpUtils.Client.SendFileToClient(lblPeerIP.Text, Convert.ToInt32(lblPeerPort.Text), sb.ToString(), message);
+            await UdpUtils.Client.SendFileToClient(lblPeerIP.Text, Convert.ToInt32(lblPeerPort.Text), sb.ToString(), message).
+                ConfigureAwait(false);
         }
 
 
@@ -200,6 +202,6 @@ namespace Client
                 }
             }
         }
-     
+
     }
 }

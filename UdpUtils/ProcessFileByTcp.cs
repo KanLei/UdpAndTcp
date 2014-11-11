@@ -26,11 +26,11 @@ namespace UdpUtils
         /// <param name="ip"></param>
         /// <param name="port"></param>
         /// <param name="filePath"></param>
-        public async void SendToClientFileAsync(string ip, int port, string filePath, Message msg)
+        public async Task SendToClientFileAsync(string ip, int port, string filePath, Message msg)
         {
             // 新建 Udp 用于通知服务端，客户端要发送文件了
-            UdpClient sendClient = new UdpClient();
-            TcpClient localClient = new TcpClient();
+            var sendClient = new UdpClient();
+            var localClient = new TcpClient();
 
             try
             {
@@ -49,10 +49,10 @@ namespace UdpUtils
                  * 
                  * 注：Udp 客户端用于发送通知消息，Tcp 客户端用于发送文件
                  */
-                sendClient.Send(datagram, datagram.Length, endPoint);
+                await sendClient.SendAsync(datagram, datagram.Length, endPoint).ConfigureAwait(false);
 
                 IPEndPoint remoteEndPoint = new IPEndPoint(IPAddress.Any, 0);
-                byte[] bytes = sendClient.Receive(ref remoteEndPoint);  // 阻塞直到接收到远程客户端的响应
+                byte[] bytes = (await sendClient.ReceiveAsync().ConfigureAwait(false)).Buffer;  // 阻塞直到接收到远程客户端的响应
 
                 // 获取服务器的 IP 和 Port
                 string serverIPAndPort = Encoding.Unicode.GetString(bytes);
@@ -64,21 +64,23 @@ namespace UdpUtils
                 /*
                  * 开始发送文件
                  */
+
                 byte[] buffer = new byte[MAXSIZE];
                 using (var localStream = localClient.GetStream())
-                using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
+                using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, 1, true))
                 {
                     int percent = 0;
                     int count = 0;
+
                     do
                     {
-                        count = fs.Read(buffer, 0, buffer.Length);  // 0 表示读入到 buffer 中的起始位置
+                        count = await fs.ReadAsync(buffer, 0, buffer.Length);  // 0 表示读入到 buffer 中的起始位置
 
                         if (Client.SendFileProgressNotify != null)
                         {
                             Client.SendFileProgressNotify(String.Format("{0:F2}%", (percent += count) / msg.FileLength * 100));
                         }
-                        await Task.Delay(10);
+                        //await Task.Delay(10);
                         await localStream.WriteAsync(buffer, 0, count);
                     } while (count > 0);
                 }
@@ -105,14 +107,14 @@ namespace UdpUtils
         /// <summary>
         /// 接收客户端发送的文件
         /// </summary>
-        public async void ReceiveClientFile(Message msg, IPEndPoint remtoe)
+        public async Task ReceiveClientFile(Message msg, IPEndPoint remtoe)
         {
             // 新建 Udp 协议用于接收文件
-            UdpClient receiveFile = new UdpClient();
+            var receiveFile = new UdpClient();
 
             const int PORT = 8555;
             var hostName = Dns.GetHostName();
-            var localadd = Dns.GetHostEntry(hostName).AddressList.Where(i => i.AddressFamily == AddressFamily.InterNetwork).FirstOrDefault();
+            var localadd = Dns.GetHostEntry(hostName).AddressList.FirstOrDefault(i => i.AddressFamily == AddressFamily.InterNetwork);
 
             TcpListener listener = null;
             TcpClient localClient = null;
@@ -127,22 +129,22 @@ namespace UdpUtils
                  */
                 Message send = new Message { Type = MessageEnum.FILE, IpAddress = localadd.ToString(), Port = PORT };
                 byte[] buffer = Encoding.Unicode.GetBytes(JsonConvert.SerializeObject(send));
-                receiveFile.Send(buffer, buffer.Length, remtoe);  // 响应远程客户端
+                await receiveFile.SendAsync(buffer, buffer.Length, remtoe).ConfigureAwait(false);  // 响应远程客户端
 
-                localClient = listener.AcceptTcpClient();  // 等待远程客户端连接
+                localClient = await listener.AcceptTcpClientAsync();  // 等待远程客户端连接
 
                 // 接收并保存到文件
                 using (var remoteStream = localClient.GetStream())
-                using (FileStream fs = new FileStream(msg.FileName, FileMode.OpenOrCreate, FileAccess.Write))
+                using (FileStream fs = new FileStream(msg.FileName, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None, 1, true))
                 {
                     int percent = 0;
                     int count = 0;
                     byte[] datagram = new byte[MAXSIZE];
-                    IPEndPoint endPoint = new IPEndPoint(IPAddress.Any, 0);
+
                     do
                     {
-                        count = remoteStream.Read(datagram, 0, datagram.Length);
-                        await fs.WriteAsync(datagram, 0, count);  // 0 表示从 datagram 起始处写入到 fs 流中
+                        count = await remoteStream.ReadAsync(datagram, 0, datagram.Length);
+                        await fs.WriteAsync(datagram, 0, count).ConfigureAwait(false);  // 0 表示从 datagram 起始处写入到 fs 流中
 
                         if (Client.ReceiveFileProgressNotify != null)
                         {

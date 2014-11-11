@@ -26,10 +26,10 @@ namespace UdpUtils
         /// <param name="ip"></param>
         /// <param name="port"></param>
         /// <param name="filePath"></param>
-        public async void SendToClientFileAsync(string ip, int port, string filePath, Message msg)
+        public async Task SendToClientFileAsync(string ip, int port, string filePath, Message msg)
         {
             // 新建 Udp 用于发送文件
-            UdpClient sendClient = new UdpClient();
+            var sendClient = new UdpClient();
 
             try
             {
@@ -48,30 +48,29 @@ namespace UdpUtils
                  * 
                  * 注：原远程客户端用于发送消息，新远程客户端用于发送文件
                  */
-                sendClient.Send(datagram, datagram.Length, endPoint);
+                await sendClient.SendAsync(datagram, datagram.Length, endPoint);
 
-                IPEndPoint remoteEndPoint = new IPEndPoint(IPAddress.Any, 0);
-                sendClient.Receive(ref remoteEndPoint);  // 阻塞直到接收到远程客户端的响应
+                //IPEndPoint remoteEndPoint = new IPEndPoint(IPAddress.Any, 0);
+                UdpReceiveResult result = await sendClient.ReceiveAsync().ConfigureAwait(false);   // 阻塞直到接收到远程客户端的响应
 
                 /*
                  * 开始发送文件
                  */
                 byte[] buffer = new byte[MAXSIZE];
-                using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
+                using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, 1, true))
                 {
                     int percent = 0;
                     int count = 0;
-                    do
+                    while ((count = await fs.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false)) > 0)
                     {
-                        count = fs.Read(buffer, 0, buffer.Length);  // 0 表示读入到 buffer 中的起始位置
+                        //await Task.Delay(10);
+                        await sendClient.SendAsync(buffer, count, result.RemoteEndPoint);
 
                         if (Client.SendFileProgressNotify != null)
                         {
                             Client.SendFileProgressNotify(String.Format("{0:F2}%", (percent += count) / msg.FileLength * 100));
                         }
-                        await Task.Delay(10);
-                        await sendClient.SendAsync(buffer, count, remoteEndPoint);
-                    } while (count > 0);
+                    }
                     sendClient.Close();
                 }
             }
@@ -86,10 +85,10 @@ namespace UdpUtils
         /// <summary>
         /// 接收客户端发送的文件
         /// </summary>
-        public async void ReceiveClientFile(Message msg, IPEndPoint remtoe)
+        public async Task ReceiveClientFile(Message msg, IPEndPoint remtoe)
         {
             // 新建 Udp 协议用于接收文件
-            UdpClient receiveFile = new UdpClient();
+            var receiveFile = new UdpClient();
 
             try
             {
@@ -100,17 +99,17 @@ namespace UdpUtils
                  */
                 Message send = new Message { Type = MessageEnum.FILE };
                 byte[] buffer = Encoding.Unicode.GetBytes(JsonConvert.SerializeObject(send));
-                receiveFile.Send(buffer, buffer.Length, remtoe);  // 响应远程客户端
+                await receiveFile.SendAsync(buffer, buffer.Length, remtoe);  // 响应远程客户端
 
                 // 接收并保存到文件
-                using (FileStream fs = new FileStream(msg.FileName, FileMode.OpenOrCreate, FileAccess.Write))
+                using (FileStream fs = new FileStream(msg.FileName, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None, 1, true))
                 {
                     int percent = 0;
                     byte[] datagram = new byte[MAXSIZE];
                     IPEndPoint endPoint = new IPEndPoint(IPAddress.Any, 0);
-                    do
+
+                    while ((datagram = (await receiveFile.ReceiveAsync().ConfigureAwait(false)).Buffer).Length > 0)
                     {
-                        datagram = receiveFile.Receive(ref endPoint);
                         await fs.WriteAsync(datagram, 0, datagram.Length);  // 0 表示从 datagram 起始处写入到 fs 流中
 
                         if (Client.ReceiveFileProgressNotify != null)
@@ -118,10 +117,9 @@ namespace UdpUtils
                             Client.ReceiveFileProgressNotify(String.Format("{0:F2}%", (percent += datagram.Length) / msg.FileLength * 100));
                         }
 
-                    } while (datagram.Length > 0);
+                    }
                     receiveFile.Close();
                 }
-
             }
             catch (Exception e)
             {
